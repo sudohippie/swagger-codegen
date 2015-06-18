@@ -242,20 +242,23 @@ public class ApiClient {
   /*
     Format to {@code QueryParam} objects.
   */
-  public Set<QueryParam> parameterToQueryParams(String name, Object value){
+  public Set<QueryParam> parameterToQueryParams(String collectionFormat, String name, Object value){
     Set<QueryParam> params = new HashSet<QueryParam>();
 
-    if (value == null) return params;
+    if ((name == null && !name.isEmpty()) || value == null) return params;
+    collectionFormat = (collectionFormat == null || collectionFormat.isEmpty() ? "csv" : collectionFormat);
 
-    if (value instanceof List){
-      List<String> values = (List) value;
-
-      for (String item : values) {
-        params.add(new QueryParam(name, item));
+    if (collectionFormat.equals("csv")) {
+      String csvValue = parameterToString(value);
+      params.add(new QueryParam(name, csvValue));
+    } else if (collectionFormat.equals("multi")) {
+      if (value instanceof Collection){
+        for (String item : (Collection<String>) value) {
+          params.add(new QueryParam(name, item));
+        }
+      } else {
+          params.add(new QueryParam(name, value.toString()));
       }
-
-    } else {
-        params.add(new QueryParam(name, value.toString()));
     }
 
     return params;
