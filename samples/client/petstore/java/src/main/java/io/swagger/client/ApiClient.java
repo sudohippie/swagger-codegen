@@ -245,20 +245,50 @@ public class ApiClient {
   public Set<QueryParam> parameterToQueryParams(String collectionFormat, String name, Object value){
     Set<QueryParam> params = new HashSet<QueryParam>();
 
-    if ((name == null && !name.isEmpty()) || value == null) return params;
-    collectionFormat = (collectionFormat == null || collectionFormat.isEmpty() ? "csv" : collectionFormat);
+    // preconditions
+    if (name == null || name.isEmpty() || value == null) return params;
+
+    Collection<String> valueCollection = null;
+    if (value instanceof Collection) {
+      valueCollection = (Collection<String>) value;
+    }
+
+    if (valueCollection == null) {
+      params.add(new QueryParam(name, String.valueOf(value)));
+      return params;
+    } else if (valueCollection.isEmpty()) {
+      return params;
+    }
+
+    collectionFormat = (collectionFormat == null || collectionFormat.isEmpty() ? "csv" : collectionFormat); // default: csv
 
     if (collectionFormat.equals("csv")) {
-      String csvValue = parameterToString(value);
-      params.add(new QueryParam(name, csvValue));
+      params.add(new QueryParam(name, parameterToString(value)));
     } else if (collectionFormat.equals("multi")) {
-      if (value instanceof Collection){
-        for (String item : (Collection<String>) value) {
-          params.add(new QueryParam(name, item));
-        }
-      } else {
-          params.add(new QueryParam(name, value.toString()));
+      for (String item : valueCollection) {
+        params.add(new QueryParam(name, item));
       }
+    } else if (collectionFormat.equals("ssv")) {
+      StringBuilder sb = new StringBuilder() ;
+      for (String item : valueCollection) {
+        sb.append(" ");
+        sb.append(item);
+      }
+      params.add(new QueryParam(name, sb.substring(1)));
+    } else if (collectionFormat.equals("tsv")) {
+      StringBuilder sb = new StringBuilder() ;
+      for (String item : valueCollection) {
+        sb.append("\t");
+        sb.append(item);
+      }
+      params.add(new QueryParam(name, sb.substring(1)));
+    } else if (collectionFormat.equals("pipes")) {
+      StringBuilder sb = new StringBuilder() ;
+      for (String item : valueCollection) {
+        sb.append("|");
+        sb.append(item);
+      }
+      params.add(new QueryParam(name, sb.substring(1)));
     }
 
     return params;
